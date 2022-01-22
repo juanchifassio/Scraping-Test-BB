@@ -129,7 +129,7 @@ def getEpisodesData(driver, delay):
 
     return episodios
 
-PATH = "C:\\Users\\Juanks\\Desktop\\Stuff\\CODING\\Python\\ScrapingTest\\chromedriver.exe"
+PATH = "C:\\Users\\Juanks\\Desktop\\Stuff\\CODING\\Python\\TestBB\\chromedriver.exe"
 
 driver = webdriver.Chrome(PATH)
 
