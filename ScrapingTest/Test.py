@@ -1,6 +1,8 @@
 from selenium import webdriver
-import time
 from selenium.webdriver.common.by import By
+import time
+import json
+
 
 def pageNavigation(driver, q, index, delay):
 
@@ -44,7 +46,7 @@ def getData(links, q, delay):
 
     for link in links:
 
-        data = []
+        d = {}
 
         driver.get(link)
         driver.maximize_window()
@@ -63,32 +65,38 @@ def getData(links, q, delay):
         else:
             titulo = titulo.text
         
-        data.append(titulo)
+        d['titulo'] = titulo
 
         metaData = driver.find_elements(By.CLASS_NAME,"meta-list")[0].find_elements(By.TAG_NAME,'li')
 
-        for i in metaData:
-            data.append(i.text)
+        if q == 'movies': 
+            metalistKeys = ['calificacion', 'duracion', 'genero', 'año', 'sonido']
+        else:
+            metalistKeys = ['calificacion', 'episodios', 'género', 'año', 'sonido']
 
-        data.append(link)
+        for i in range(0,len(metaData)):
+            d[metalistKeys[i]]=metaData[i].text
+            
+        d['link']=link
         
         desc = driver.find_elements(By.CLASS_NAME,"logline")[0].find_element(By.TAG_NAME,'P')
-        data.append(desc.text)
+        d['sinopsis']=desc.text
         
         if q == 'movies':
-            x.append(data)
-        else: 
-            x.append(getEpisodesData(driver, data, delay))
+            x.append(d)
 
+        else: 
+            d['zepisodios']=getEpisodesData(driver, delay)
+            x.append(d)
+        
     return x
 
 
-def getEpisodesData(driver, data, delay):
+def getEpisodesData(driver, delay):
 
-    y = []
+    episodios = []
 
     seasons = driver.find_elements(By.CLASS_NAME,'season-number')
-    data.append(f'{len(seasons)} temporadas')
 
     links = [season.find_element(By.TAG_NAME,'a').get_attribute('href') for season in seasons]
 
@@ -103,48 +111,44 @@ def getEpisodesData(driver, data, delay):
 
         for i in range(0,len(containers)):
 
-            episode = []
-            title = containers[i].text
-            
+            episode = {}
+            titulo = containers[i].text
 
-            if title != "":
-
-                episode.append(title)
+            if titulo != "":
+                episode['titulo'] = titulo
 
                 metaData = driver.find_elements(By.CLASS_NAME,"meta-list")[i+1].find_elements(By.TAG_NAME,'li')
+                metalistKeys = ['calificacion', 'duracion', 'año', 'sonido']
 
-                for j in metaData:
-                    episode.append(j.text)
-            
-            y.append(episode)
+                for j in range(0,len(metaData)):
 
-            
+                    episode[metalistKeys[j]]=metaData[j].text
 
-    data.append(y)
+                episodios.append(episode)
+    
 
-    return data
+    return episodios
 
 PATH = "C:\\Users\\Juanks\\Desktop\\Stuff\\CODING\\Python\\ScrapingTest\\chromedriver.exe"
 
 driver = webdriver.Chrome(PATH)
 
-
-
+data = {}
 
 pageNavigation(driver, 'movies', 3, 2)
 
 movieLinks = getLinks(driver)
 
-peliculas = [getData(movieLinks, 'movies', 2)]
-
+data['peliculas'] = getData(movieLinks, 'movies', 2)
 
 pageNavigation(driver, 'series', 2, 2)
 
 serieLinks = getLinks(driver)
 
-series = [getData(serieLinks, 'series', 2)]
+data['series'] = getData(serieLinks, 'series', 2)
 
-print(peliculas)
 
-print(series)
+with open('results.json', 'w', encoding='utf-8') as f:
+    json.dump(data, f, ensure_ascii= False,  indent=4)
 
+driver.close()
